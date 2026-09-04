@@ -56,5 +56,10 @@
   "add_exclusion": "添加排除项",
   "mode_lkm": "LKM",
   "mode_builtin": "Built-in",
-  "module_version_label": "Module version"
+  "module_version_label": "Module version",
+  "block_detectors": "屏蔽检测器",
+  "blocking_detectors": "正在屏蔽检测器...",
+  "detectors_blocked": "个检测器已屏蔽",
+  "no_detectors_found": "未检测到已知检测器",
+  "no_apps_cache": "应用列表不可用"
 }

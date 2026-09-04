@@ -349,6 +349,14 @@ md-icon svg { width: 1em; height: 1em; fill: currentColor; display: block; }
 .search-box input { background: transparent; border: none; width: 100%; outline: none; }
 .search-box input::placeholder { color: var(--md-sys-color-on-surface-variant); }
 .search-box md-icon-button { margin-right: -8px; }
+.detector-btn {
+    flex-shrink: 0; white-space: nowrap;
+    background: var(--md-sys-color-primary-container, #d8e2ff);
+    color: var(--md-sys-color-on-primary-container, #001b3f);
+    border: none; border-radius: 999px; padding: 6px 14px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.detector-btn:active { opacity: 0.7; }
 
 .filter-menu {
     background-color: var(--md-sys-color-surface-container-highest);

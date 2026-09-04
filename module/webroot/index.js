@@ -792,6 +792,83 @@ async function addExclusion(uid, label, pkg) {
     await loadExclusions();
 }
 
+// Detector preset: known root / environment detectors that probe for hidden
+// (or injected) files. Adapted from the detector inventory of Hide My Applist
+// (HMA-OSS, AGPL-3.0) — only the package names are used. Blocking them shows
+// them the stock filesystem, the same view they would get on an unmodified
+// device. These package names are the durable half: several detectors ship
+// under names that stay stable across builds.
+const DETECTOR_PACKAGES = [
+    "com.reveny.nativecheck",
+    "icu.nullptr.nativetest",
+    "io.github.rabehx.securify",
+    "com.zhenxi.hunter",
+    "io.github.vvb2060.mahoshojo",
+    "io.github.huskydg.memorydetector",
+    "org.akanework.checker",
+    "icu.nullptr.applistdetector",
+    "com.byxiaorun.detector",
+    "com.kimchangyoun.rootbeerFresh.sample",
+    "com.androidfung.drminfo",
+    "com.kikyps.crackme",
+    "org.matrix.demo",
+    "com.rem01gaming.disclosure",
+    "com.AndroLua",
+    "com.detect.mt",
+    "io.liankong.riskdetector",
+    "com.suisho.rc",
+    "com.ahmed.security_tester",
+    "wu.Zygisk.Detector",
+    "com.atominvention.rootchecker",
+    "com.joeykrim.rootcheck",
+    "com.longz.detector",
+    "com.anycheck.app",
+    "by.sheerboy.femboydetector",
+    "com.lingqing.detector",
+    "com.android.nativetest",
+    "wu.Rookie.Detector",
+    "com.fkjc.zcro",
+    "wu.keyChain.test",
+    "at.persie0.root_detection_app",
+    "krypton.tbsafetychecker",
+    "gr.nikolasspyr.integritycheck",
+    "com.henrikherzig.playintegritychecker",
+    "com.thend.integritychecker",
+    "com.flinkapps.safteynet",
+    "com.bryancandi.knoxcheck"
+];
+
+async function blockDetectors() {
+    showToast(translate('blocking_detectors') || 'Blocking detectors...');
+    try {
+        await ensureAppsCache();
+        const cache = allAppsCache;
+        if (!cache.length) { showToast(translate('no_apps_cache') || 'App list unavailable'); return; }
+
+        const targets = new Map();
+        for (const app of cache) {
+            const pkg = app.packageName || '';
+            for (const det of DETECTOR_PACKAGES) {
+                if (pkg === det) { targets.set(app.uid, app); break; }
+            }
+        }
+        if (!targets.size) { showToast(translate('no_detectors_found') || 'No known detectors found'); closeAppSelector(); return; }
+
+        const currentData = await readExclusionsJson();
+        const existingUids = new Set(currentData.map(a => String(a.uid)));
+        const uidsBash = [];
+        for (const [uid, app] of targets) {
+            if (!existingUids.has(uid)) currentData.push({ uid: String(uid), label: app.appLabel, pkg });
+            uidsBash.push(uid);
+        }
+        await writeExclusionsJson(currentData);
+        await exec(`${NM_BIN} uid add ${uidsBash.join(' ')}`);
+        showToast(`${targets.size} ${translate('detectors_blocked') || 'detectors blocked'}`);
+        closeAppSelector();
+        await loadExclusions();
+    } catch { showToast(translate('error_blocking')); }
+}
+
 // Options
 async function loadOptions() {
     const swSafe = document.querySelector('#setting-safemode input'),
@@ -1119,6 +1196,11 @@ function initDelegationAndAttach() {
     });
 
     document.getElementById('fab-add-exclusion')?.addEventListener('click', openAppSelector);
+
+    document.getElementById('btn-block-detectors')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await blockDetectors();
+    });
 
     attachPullToRefresh('.page-container', '.pull-to-refresh-indicator', 90, async () => { await refreshCurrentView(); },
     () => {
