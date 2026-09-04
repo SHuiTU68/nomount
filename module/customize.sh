@@ -15,7 +15,14 @@ elif [ "$APATCH" = "true" ]; then
   ROOT_IMP=ap
   ui_print "- Root implementation: APatch"
 else
-  abort "! Unsupported root env"
+  # APatch: the manager (apd installer) already exports APATCH=true; also
+  # detect it from the apd binary when it is not exported.
+  if command -v apd >/dev/null 2>&1 || [ -x /data/adb/ap/bin/apd ]; then
+    ROOT_IMP=ap
+    ui_print "- Root implementation: APatch (apd detected)"
+  else
+    abort "! Unsupported root env"
+  fi
 fi
 
 if [ ! -f "$MODPATH/bin/nm-$ARCH" ]; then
@@ -73,7 +80,7 @@ IS_BUILTIN=false
 
 ui_print "- Checking Kernel support via Internal API..."
 if "$MODPATH/bin/nm" version > /dev/null 2>&1 || "$OLD_MODPATH/bin/nm" version > /dev/null 2>&1; then
-  if lsmod | grep -q "^nomount"; then
+  if grep -q '^nomount ' /proc/modules; then
     ui_print "  [*] Active LKM detected during update. Unloading old driver..."
     rmmod nomount 2>/dev/null
     OLD_LKM_UNLOADED=true
@@ -91,7 +98,7 @@ else
 
   EXACT_MATCH="$MODPATH/lkm/nomount-${AKVER}-${KVER}.ko"
   if [ -n "$AKVER" ] && [ -f "$EXACT_MATCH" ]; then
-    ui_print "  [*] Trying exact match: $(basename "$EXACT_MATCH")"
+    ui_print "  [*] Trying exact match: ${EXACT_MATCH##*/}"
     if load_ko "$EXACT_MATCH"; then
       mv "$EXACT_MATCH" "$MODPATH/lkm/nomount.ko"
       NOMOUNT_LOADED=true
@@ -103,7 +110,7 @@ else
   if [ "$NOMOUNT_LOADED" = false ]; then
     for mod in "$MODPATH"/lkm/nomount*-${KVER}.ko; do
       if [ ! -f "$mod" ] || [ "$mod" = "$EXACT_MATCH" ]; then continue; fi
-      ui_print "  [*] Trying fallback: $(basename "$mod")"
+      ui_print "  [*] Trying fallback: ${mod##*/}"
       if load_ko "$mod"; then
         mv "$mod" "$MODPATH/lkm/nomount.ko"
         NOMOUNT_LOADED=true
