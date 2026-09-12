@@ -56,5 +56,10 @@
   "add_exclusion": "Agregar exclusión",
   "mode_lkm": "LKM",
   "mode_builtin": "Built-in",
-  "module_version_label": "Module version"
+  "module_version_label": "Module version",
+  "block_detectors": "Shield detectors",
+  "blocking_detectors": "Blocking detectors...",
+  "detectors_blocked": "detectors blocked",
+  "no_detectors_found": "No known detectors installed",
+  "no_apps_cache": "App list unavailable"
 }
