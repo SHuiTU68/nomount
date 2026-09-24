@@ -76,7 +76,13 @@ for mod_path in "$MODULES_DIR"/*; do
             echo "[INFO] Mounting module: $mod_name (/$partition)" >> "$LOG_FILE"
             find -L "$mod_path/$partition" \( -type d -o -type c -o -name ".replace" \) -exec sh -c '
                 for f do
-                    v="${f#'"$mod_path"'}"; [ "${v#/system/odm/}" != "$v" ] && v="/odm/${v#/system/odm/}"
+                    v="${f#'"$mod_path"'}"
+                    case "$v" in /system/*)
+                        p="${v#/system/}"; p="${p%%/*}"
+                        case "$p" in vendor|system_ext|product|odm|apex|oem|optics|prism|mi_ext|my_*)
+                            v="/$p${v#/system/$p}" ;;
+                        esac
+                    ;; esac
                     if [ -d "$f" ]; then case "$(getfattr -n trusted.overlay.opaque "$f" 2>/dev/null)" in *"=\"y\""*) printf "%s\0" "$v";; esac
                     elif [ "${f##*/}" = ".replace" ]; then printf "%s\0" "${v%/.replace}"
                     else printf "%s\0" "$v"; fi
@@ -85,7 +91,13 @@ for mod_path in "$MODULES_DIR"/*; do
 
             find -L "$mod_path/$partition" \( -type f -o -type l \) ! -name ".replace" -exec sh -c '
                 for f do
-                    v="${f#'"$mod_path"'}"; [ "${v#/system/odm/}" != "$v" ] && v="/odm/${v#/system/odm/}"
+                    v="${f#'"$mod_path"'}"
+                    case "$v" in /system/*)
+                        p="${v#/system/}"; p="${p%%/*}"
+                        case "$p" in vendor|system_ext|product|odm|apex|oem|optics|prism|mi_ext|my_*)
+                            v="/$p${v#/system/$p}" ;;
+                        esac
+                    ;; esac
                     printf "%s\0%s\0" "$v" "$f"
                 done
             ' _ {} + 2>/dev/null | xargs -0 -r "$LOADER" rule add >> "$LOG_FILE" 2>&1
@@ -95,9 +107,8 @@ done
 
 echo "=== Injection Complete: $(date) ===" >> "$LOG_FILE"
 
-# NOTE: moved to boot-completed.sh
-# rm -f "$BOOT_SEMAPHORE"
-# echo "[OK] Boot phase completed safely." >> "$LOG_FILE"
+rm -f "$BOOT_SEMAPHORE"
+echo "[OK] Boot phase completed safely." >> "$LOG_FILE"
 sed -i "s|^description=.*|description=$BASE_DESC|" "$PROP_FILE"
 
 echo -e "\nCurrent files injected:" >> "$LOG_FILE"
