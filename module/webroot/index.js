@@ -239,6 +239,78 @@ const UI = {};
 let currentActiveViewId = 'view-home';
 let currentActiveViewTitle = '';
 
+let currentHistoryLevel = 0;
+history.replaceState({ level: 0 }, '');
+
+window.addEventListener('popstate', (e) => {
+    const level = e.state ? e.state.level : 0;
+
+    if (currentHistoryLevel === 3 && level < 3) {
+        currentHistoryLevel = level;
+        const uidModal = document.getElementById('uid-input-modal');
+        const cancelBtn = document.getElementById('btn-cancel-uid');
+        if (uidModal && uidModal.classList.contains('active') && cancelBtn) cancelBtn.click();
+    }
+
+    if (currentHistoryLevel === 2 && level < 2) {
+        currentHistoryLevel = level;
+        if (typeof closeAppSelector === 'function') closeAppSelector(true);
+        if (typeof exitMultiSelectMode === 'function') exitMultiSelectMode();
+    }
+
+    if (currentHistoryLevel >= 1 && level === 0) {
+        currentHistoryLevel = level;
+        switchToTab('view-home', false);
+    }
+
+    currentHistoryLevel = level;
+});
+
+function switchToTab(target, pushToHistory = true) {
+    if (currentActiveViewId === target && document.getElementById(target)?.classList.contains('active')) return;
+
+    const navItems = document.querySelectorAll('.nav-item');
+    const views = document.querySelectorAll('.view-content');
+    const fab = document.getElementById('fab-container');
+
+    navItems.forEach(nav => {
+        nav.classList.remove('active');
+        const i = nav.querySelector('md-icon');
+        if (i) setIcon(i, (i.dataset.icon || i.textContent.trim()), nav.dataset.target === target ? 'filled' : 'outline');
+        if (nav.dataset.target === target) nav.classList.add('active');
+    });
+
+    views.forEach(v => v.classList.remove('active'));
+    const targetView = document.getElementById(target);
+    if (targetView) targetView.classList.add('active');
+
+    currentActiveViewId = target;
+    currentActiveViewTitle = targetView.querySelector('.header-title')?.textContent?.trim() || '';
+
+    updateTopAppBar();
+    if (fab) fab.classList.toggle('visible', target === 'view-exclusions');
+
+    if (pushToHistory) {
+        if (target === 'view-home') {
+            if (currentHistoryLevel === 1) { history.back(); currentHistoryLevel = 0; } 
+            else if (currentHistoryLevel > 1) { history.go(-currentHistoryLevel); currentHistoryLevel = 0; }
+        } else {
+            if (currentHistoryLevel === 0) { history.pushState({ level: 1 }, ''); currentHistoryLevel = 1; } 
+            else if (currentHistoryLevel === 1) { history.replaceState({ level: 1 }, ''); }
+        }
+    }
+
+    setTimeout(() => {
+        if (!viewLoadState[target]) {
+            viewLoadState[target] = true;
+            if (target === 'view-home') loadHome();
+            else if (target === 'view-modules') loadModules();
+            else if (target === 'view-exclusions') loadExclusions();
+            else if (target === 'view-options') loadOptions();
+        }
+    }, 0);
+}
+
 function updateTopAppBar() {
     if (!UI.c) {
         UI.c = document.querySelector('.page-container');
@@ -269,45 +341,13 @@ function updateTopAppBar() {
 
 function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
-    const views = document.querySelectorAll('.view-content');
-    const fab = document.getElementById('fab-container');
-
     navItems.forEach(item => {
         const iconEl = item.querySelector('md-icon');
         if (iconEl) {
             const iconName = iconEl.dataset.icon || iconEl.textContent.trim();
             setIcon(iconEl, iconName, item.classList.contains('active') ? 'filled' : 'outline');
         }
-
-        item.addEventListener('click', () => {
-            navItems.forEach(nav => {
-                nav.classList.remove('active');
-                const i = nav.querySelector('md-icon');
-                if (i) setIcon(i, (i.dataset.icon || i.textContent.trim()), nav === item ? 'filled' : 'outline');
-            });
-            item.classList.add('active');
-            const target = item.dataset.target;
-            
-            views.forEach(v => v.classList.remove('active'));
-            const targetView = document.getElementById(target);
-            targetView.classList.add('active');
-            
-            currentActiveViewId = target;
-            currentActiveViewTitle = targetView.querySelector('.header-title')?.textContent?.trim() || '';
-            
-            updateTopAppBar();
-            fab.classList.toggle('visible', target === 'view-exclusions');
-
-            setTimeout(() => {
-                if (!viewLoadState[target]) {
-                    viewLoadState[target] = true;
-                    if (target === 'view-home') loadHome();
-                    else if (target === 'view-modules') loadModules();
-                    else if (target === 'view-exclusions') loadExclusions();
-                    else if (target === 'view-options') loadOptions();
-                }
-            }, 0);
-        });
+        item.addEventListener('click', () => switchToTab(item.dataset.target, true));
     });
 }
 
@@ -441,8 +481,19 @@ async function loadModules() {
                     <div class="module-header">
                         <div class="module-info">
                             <h3>${realName || modId}</h3>
-                            <p>${translate('status_label')}: ${translate(statusKey)}</p>
-                            <p class="file-count"><span>${translate('modules_injected_files', { count: fileCount })}</span></p>
+                            <div class="module-chips">
+                                <span class="status-chip md-chip status-${statusKey.replace('status_', '')}">
+                                    ${translate(statusKey)}
+                                </span>
+                                <span class="files-chip md-chip" style="${fileCount > 0 ? '' : 'display: none;'}">
+                                    <md-icon data-icon="syringe">
+                                        <svg viewBox="0 0 48 48" aria-hidden="true" style="width: 1.2em; height: 1.2em; fill: currentColor; transform: scaleX(-1);">
+                                            <path d="M45.4,10.3,37.7,2.6a2.1,2.1,0,0,0-2.9,0,2.1,2.1,0,0,0,0,2.8l2.5,2.5-3.4,3.4L28.5,5.8h0a2,2,0,1,0-2.8,2.9L9.9,24.4a6.3,6.3,0,0,0-1.7,5.2l1.1,6.3L4.6,40.6a1.9,1.9,0,0,0,0,2.8,1.9,1.9,0,0,0,2.8,0l4.7-4.7,6.3,1.1a6,6,0,0,0,5.2-1.7L39.4,22.3a2,2,0,1,0,2.9-2.7l-5.6-5.5,3.4-3.4,2.5,2.5a2,2,0,0,0,1.4.6A2.1,2.1,0,0,0,45.4,10.3Zm-24.6,25a2.3,2.3,0,0,1-1.8.5l-5.8-1-1-5.8a2.3,2.3,0,0,1,.5-1.8l2.6-2.5,3.2,3.2a2.1,2.1,0,0,0,2.9,0,1.9,1.9,0,0,0,0-2.8l-3.3-3.3,3.4-3.3,3.3,3.2a2,2,0,0,0,2.8-2.8l-3.3-3.3,4.2-4.1,8,8Z"/>
+                                        </svg>
+                                    </md-icon>
+                                    <span class="files-count-text">${fileCount > 0 ? translate('modules_injected_files', { count: fileCount }) : ''}</span>
+                                </span>
+                            </div>
                         </div>
                         <label class="custom-switch" id="switch-${modId}">
                             <input type="checkbox" class="switch-input" aria-label="Toggle module" ${!hasDisable ? 'checked' : ''}>
@@ -717,7 +768,7 @@ async function ensureAppsCache(force = false) {
     return appLoadingPromise;
 }
 
-function closeAppSelector() {
+function closeAppSelector(fromHistory = false) {
     const modal = document.getElementById('app-selector-modal');
     const content = modal?.querySelector('.modal-content');
     modal?.classList.remove('active');
@@ -725,6 +776,11 @@ function closeAppSelector() {
     content?.style.removeProperty('--app-selector-top');
     content?.style.removeProperty('--app-selector-height');
     if (listObserver) listObserver.disconnect();
+
+    if (!fromHistory && currentHistoryLevel >= 2) {
+        history.back();
+        currentHistoryLevel = 1;
+    }
 }
 
 function openAppSelector() {
@@ -742,6 +798,12 @@ function openAppSelector() {
     content.style.setProperty('--app-selector-height', `${Math.round(viewportHeight * 0.9)}px`);
     content.classList.add('viewport-locked');
     modal.classList.add('active');
+
+    if (currentHistoryLevel < 2) {
+        history.pushState({ level: 2 }, '');
+        currentHistoryLevel = 2;
+    }
+
     if (listObserver) listObserver.disconnect();
     document.getElementById('filter-menu').classList.remove('active'); 
     searchInput.value = '';
@@ -977,8 +1039,19 @@ function initDelegationAndAttach() {
         const nowLoaded = newFileCount > 0;
         const toggleChecked = card.querySelector('.switch-input').checked;
         const statusKey = nowLoaded ? (toggleChecked ? 'status_loaded' : 'status_active') : (toggleChecked ? 'status_inactive' : 'status_disabled');
-        card.querySelector('.file-count span').textContent = translate('modules_injected_files', { count: newFileCount });
-        card.querySelector('.module-info p').textContent = `${translate('status_label')}: ${translate(statusKey)}`;
+
+        const filesChip = card.querySelector('.files-chip');
+        if (newFileCount > 0) {
+            filesChip.style.display = '';
+            card.querySelector('.files-count-text').textContent = translate('modules_injected_files', { count: newFileCount });
+        } else {
+            filesChip.style.display = 'none';
+        }
+
+        const statusChip = card.querySelector('.status-chip');
+        statusChip.textContent = translate(statusKey);
+        statusChip.className = `status-chip md-chip status-${statusKey.replace('status_', '')}`;
+
         const hotBtn = card.querySelector('.btn-hot-action');
         const btnSpan = hotBtn.querySelector('span');
 
@@ -1065,7 +1138,7 @@ function initDelegationAndAttach() {
     });
 
     let pressTimer, touchMoved = false;
-    const exitMultiSelectMode = () => {
+    const exitMultiSelectMode = window.exitMultiSelectMode = () => {
         isMultiSelectMode = false;
         selectedAppsMap.clear();
         document.querySelectorAll('.app-item.selected').forEach(el => el.classList.remove('selected'));
@@ -1161,6 +1234,11 @@ function initDelegationAndAttach() {
                 const btnCancel = document.getElementById('btn-cancel-uid');
                 const btnAdd = document.getElementById('btn-confirm-uid');
                 modalDialog.classList.add('active');
+
+                const wasLevel = currentHistoryLevel;
+                history.pushState({ level: 3 }, '');
+                currentHistoryLevel = 3;
+
                 input.value = '';
                 setTimeout(() => input.focus(), 150);
                 const cleanup = () => {
@@ -1169,6 +1247,11 @@ function initDelegationAndAttach() {
                     btnCancel.onclick = null;
                     btnAdd.onclick = null;
                     modalDialog.onclick = null;
+
+                    if (currentHistoryLevel === 3) {
+                        history.back();
+                        currentHistoryLevel = wasLevel;
+                    }
                 };
                 btnCancel.onclick = () => { cleanup(); resolve(null); };
                 btnAdd.onclick = () => { cleanup(); resolve(input.value); };
@@ -1191,7 +1274,9 @@ function initDelegationAndAttach() {
             exitMultiSelectMode();
         }
     });
+
     document.getElementById('btn-close-modal')?.addEventListener('click', () => {
+        closeAppSelector();
         exitMultiSelectMode();
     });
 
