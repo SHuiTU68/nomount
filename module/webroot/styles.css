@@ -355,6 +355,13 @@ md-icon svg { width: 1em; height: 1em; fill: currentColor; display: block; }
 }
 .modal-header { padding: 0 8px; margin-bottom: 16px; flex-shrink: 0; }
 
+.detector-btn {
+    --md-filled-button-container-color: var(--md-sys-color-error);
+    --md-filled-button-label-text-color: var(--md-sys-color-on-error);
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
 .search-box {
     background: var(--md-sys-color-surface-container-highest); border-radius: 28px;
     padding: 0 16px; min-height: 56px; display: flex; align-items: center;

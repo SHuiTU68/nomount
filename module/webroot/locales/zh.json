@@ -73,5 +73,10 @@
   "select_custom_color": "Select custom color",
   "advanced": "Advanced",
   "advanced_color": "Advanced Color",
-  "done": "Done"
+  "done": "Done",
+  "block_detectors": "屏蔽检测器",
+  "blocking_detectors": "正在屏蔽检测器...",
+  "detectors_blocked": "个检测器已屏蔽",
+  "no_detectors_found": "未检测到已知检测器",
+  "no_apps_cache": "应用列表不可用"
 }

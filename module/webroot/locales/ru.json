@@ -73,5 +73,10 @@
   "select_custom_color": "Select custom color",
   "advanced": "Advanced",
   "advanced_color": "Advanced Color",
-  "done": "Done"
+  "done": "Done",
+  "block_detectors": "Shield detectors",
+  "blocking_detectors": "Blocking detectors...",
+  "detectors_blocked": "detectors blocked",
+  "no_detectors_found": "No known detectors installed",
+  "no_apps_cache": "App list unavailable"
 }

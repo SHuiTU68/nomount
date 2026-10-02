@@ -67,11 +67,16 @@
   "theme_dark": "Tối",
   "theme_amoled": "AMOLED",
   "material_you": "Material You",
-  "material_you_desc": "Sử dụng màu từ hình nền",
-  "custom_color": "Tùy chỉnh màu",
-  "custom_color_desc": "Chọn màu chủ đề cho giao diện",
-  "select_custom_color": "Chọn màu tùy chỉnh",
-  "advanced": "Nâng cao",
-  "advanced_color": "Chọn màu nâng cao",
-  "done": "Xong"
+  "material_you_desc": "Use system wallpaper colors",
+  "custom_color": "Custom Color",
+  "custom_color_desc": "Pick your interface accent color",
+  "select_custom_color": "Select custom color",
+  "advanced": "Advanced",
+  "advanced_color": "Advanced Color",
+  "done": "Done",
+  "block_detectors": "Shield detectors",
+  "blocking_detectors": "Blocking detectors...",
+  "detectors_blocked": "detectors blocked",
+  "no_detectors_found": "No known detectors installed",
+  "no_apps_cache": "App list unavailable"
 }

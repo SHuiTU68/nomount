@@ -73,5 +73,10 @@
   "select_custom_color": "Pilih warna khusus",
   "advanced": "Canggih",
   "advanced_color": "Warna Tingkat Lanjut",
-  "done": "Selesai"
+  "done": "Selesai",
+  "block_detectors": "Shield detectors",
+  "blocking_detectors": "Blocking detectors...",
+  "detectors_blocked": "detectors blocked",
+  "no_detectors_found": "No known detectors installed",
+  "no_apps_cache": "App list unavailable"
 }
