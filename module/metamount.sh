@@ -12,6 +12,13 @@ TARGET_PARTITIONS="system system_ext vendor odm product apex oem optics prism
 PROP_FILE="$MODDIR/module.prop"
 BASE_DESC="A metamodule that replaces OverlayFS/MagicMount with VFS path redirection."
 
+# Re-entry guard: post-fs-data.sh invokes this script explicitly right after
+# the LKM is loaded; managers with a working metamodule hook call it again on
+# the mount stage. Rules must be injected exactly once per boot.
+if [ -f "$NOMOUNT_DATA/.injected" ]; then
+    exit 0
+fi
+
 echo "=== NoMount Injection | Started: $(date) ===" >> "$LOG_FILE"
 
 if ! "$LOADER" version >/dev/null 2>&1; then
@@ -58,6 +65,9 @@ sed -i "s|^description=.*|description=$BASE_DESC|" "$PROP_FILE"
 # for large modules on every boot. The WebUI queries `nm rule list --json`
 # directly, so a one-line count is all the log needs for a sanity check.
 echo "[INFO] Active rules: $("$LOADER" rule list | wc -l)" >> "$LOG_FILE"
+
+# Injection done; let the manager's metamodule hook (if any) skip re-entry.
+touch "$NOMOUNT_DATA/.injected"
 
 # Convert leftover module bind mounts into VFS rules (hide /adb/modules
 # traces from mountinfo; see hide-mounts.sh).

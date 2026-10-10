@@ -67,4 +67,12 @@ else
 fi
 
 echo "[OK] Kernel API ready." >> "$LOG_FILE"
+
+# Fire the rules loader explicitly. Some manager builds never invoke the
+# metamodule's metamount.sh on the mount stage, which leaves modules
+# uninjected. Calling it here is harmless when the manager does fire it
+# later: metamount.sh re-entry is guarded by $NOMOUNT_DATA/.injected.
+rm -f "$NOMOUNT_DATA/.injected"
+sh "$MODDIR/metamount.sh" || true
+
 exit 0
