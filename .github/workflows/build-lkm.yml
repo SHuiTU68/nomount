@@ -7,6 +7,10 @@ on:
         description: 'Force build all KMIs'
         default: false
         type: boolean
+      kmis:
+        description: 'JSON array of selected KMIs, takes precedence over per-KMI toggles (e.g. ["android15-6.6"])'
+        default: '[]'
+        type: string
   workflow_dispatch:
     inputs:
       kmi_android12_5_10:
@@ -53,6 +57,7 @@ jobs:
         id: matrix
         env:
           BUILD_ALL: ${{ inputs.build_all }}
+          KMIS: ${{ inputs.kmis }}
           KMI_ANDROID12_5_10: ${{ inputs.kmi_android12_5_10 }}
           KMI_ANDROID13_5_10: ${{ inputs.kmi_android13_5_10 }}
           KMI_ANDROID13_5_15: ${{ inputs.kmi_android13_5_15 }}
@@ -62,7 +67,12 @@ jobs:
           KMI_ANDROID16_6_12: ${{ inputs.kmi_android16_6_12 }}
         run: |
           set -euo pipefail
-          matrix="$(jq -cn '
+          # An explicit non-empty kmi list (from a caller workflow) takes precedence
+          # over the per-KMI toggles / build_all switch below.
+          if [[ -n "$KMIS" && "$KMIS" != "[]" ]]; then
+            matrix="$KMIS"
+          else
+            matrix="$(jq -cn '
             (env.BUILD_ALL == "true") as $force_all |
             [
               {kmi: "android12-5.10", enabled: (if $force_all then true else (env.KMI_ANDROID12_5_10 == "true") end)},
@@ -74,6 +84,7 @@ jobs:
               {kmi: "android16-6.12", enabled: (if $force_all then true else (env.KMI_ANDROID16_6_12 == "true") end)}
             ] | map(select(.enabled).kmi) as $selected
               | if $selected == [] then map(.kmi) else $selected end')"
+          fi
 
           echo "kmi=$matrix" >> "$GITHUB_OUTPUT"
 

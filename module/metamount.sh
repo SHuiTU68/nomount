@@ -39,9 +39,12 @@ for mod_path in "$MODULES_DIR"/*; do
         if [ -d "$mod_path/$partition" ]; then
             [ -d "/$partition" ] || [ -d "/system/$partition" ] || continue
             echo "[INFO] Mounting module: $mod_name (/$partition)" >> "$LOG_FILE"
-            find -L "$mod_path/$partition" \( -type d -o -type c -o -name ".replace" \) -exec sh "$MODDIR/rule-paths.sh" path "$mod_path" {} + 2>/dev/null | xargs -0 -r -n 200 "$LOADER" rule add --whiteout >> "$LOG_FILE" 2>&1
+            # nm batches internally per 4K payload page, so xargs can pass as
+            # many paths as ARG_MAX allows: one nm process per module instead
+            # of one per 200 paths.
+            find -L "$mod_path/$partition" \( -type d -o -type c -o -name ".replace" \) -exec sh "$MODDIR/rule-paths.sh" path "$mod_path" {} + 2>/dev/null | xargs -0 -r "$LOADER" rule add --whiteout >> "$LOG_FILE" 2>&1
 
-            find -L "$mod_path/$partition" \( -type f -o -type l \) ! -name ".replace" -exec sh "$MODDIR/rule-paths.sh" pair "$mod_path" {} + 2>/dev/null | xargs -0 -r -n 200 "$LOADER" rule add >> "$LOG_FILE" 2>&1
+            find -L "$mod_path/$partition" \( -type f -o -type l \) ! -name ".replace" -exec sh "$MODDIR/rule-paths.sh" pair "$mod_path" {} + 2>/dev/null | xargs -0 -r "$LOADER" rule add >> "$LOG_FILE" 2>&1
         fi
     done
 done
@@ -51,7 +54,13 @@ echo "=== Injection Complete: $(date) ===" >> "$LOG_FILE"
 rm -f "$BOOT_SEMAPHORE"
 sed -i "s|^description=.*|description=$BASE_DESC|" "$PROP_FILE"
 
-echo -e "\nCurrent files injected:" >> "$LOG_FILE"
-"$LOADER" rule list >> "$LOG_FILE"
+# Keep the boot log small: the full rule dump would write thousands of lines
+# for large modules on every boot. The WebUI queries `nm rule list --json`
+# directly, so a one-line count is all the log needs for a sanity check.
+echo "[INFO] Active rules: $("$LOADER" rule list | wc -l)" >> "$LOG_FILE"
+
+# Convert leftover module bind mounts into VFS rules (hide /adb/modules
+# traces from mountinfo; see hide-mounts.sh).
+sh "$MODDIR/hide-mounts.sh" || true
 
 exit 0

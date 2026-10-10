@@ -20,3 +20,7 @@ fi
 if [ -f "$ISOLATED_FLAG" ]; then
     "$NM_BIN" uid block_isolated on >/dev/null 2>&1
 fi
+
+# Convert leftover module bind mounts into VFS rules (covers mounts created
+# after metamount.sh, e.g. late post-fs-data binders or theme engines)
+sh "$MODDIR/hide-mounts.sh" || true
