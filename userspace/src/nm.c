@@ -47,14 +47,12 @@ void c_main(long *sp) {
 
             for (int i = 0; i + step - 1 < p_count; i += step) {
                 int v_len = resolved_path_length(cwd, argv[i]);
-                if (v_len < 0) { exit_code = 3; continue; }
-                if (!v_len) { exit_code = 3; continue; }
+                if (v_len <= 0) { exit_code = 3; continue; }
 
                 int r_len = 0;
                 if (args.action == ACTION_RULE_ADD && !args.is_whiteout) {
                     r_len = resolved_path_length(cwd, argv[i+1]);
-                    if (r_len < 0) { exit_code = 3; continue; }
-                    if (!r_len) { exit_code = 3; continue; }
+                    if (r_len <= 0) { exit_code = 3; continue; }
                 }
 
                 int header_size = (target_cmd == NM_CMD_ADD_RULE) ? sizeof(struct nm_rule_hdr) : sizeof(struct nm_del_hdr);
